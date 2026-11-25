@@ -16,7 +16,13 @@ You need Google Chrome, Git, Node.js 22 with npm, Python 3, and a configured Cod
    npm ci --ignore-scripts --no-audit --no-fund
    ```
 
-2. Download the extension ZIP from the [latest release](https://github.com/NikoVonLas/codex-chrome-task-groups/releases/latest) and extract it into a directory you plan to keep. You can also use the matching clone’s `extension` directory. In the Chrome profile you want Codex to use, open `chrome://extensions`. Turn on **Developer mode**, choose **Load unpacked**, and select the directory containing `manifest.json`. Chrome should show **Playwright — task groups (local)**. This build shares an extension ID with the Microsoft Playwright extension from the Chrome Web Store. If you already use the store version, you can load this build in a separate profile. The official ChatGPT extension has its own ID and can stay enabled.
+2. Enable automatic extension updates for your macOS account.
+
+   ```sh
+   python3 scripts/update_extension.py install
+   ```
+
+   The installer prints the permanent extension directory, `~/.local/share/codex-chrome-cli/task-extension`. In the Chrome profile you want Codex to use, open `chrome://extensions`. Turn on **Developer mode**, choose **Load unpacked**, and select that directory. Chrome should show **Playwright — task groups (local)**. This build shares an extension ID with the Microsoft Playwright extension from the Chrome Web Store. If you already use the store version, you can load this build in a separate profile. The official ChatGPT extension has its own ID and can stay enabled.
 
 3. Click **Playwright — task groups (local)** in Chrome’s extensions menu. On its status page, click the copy button next to `PLAYWRIGHT_MCP_EXTENSION_TOKEN`. Run the following command in Terminal, paste the copied text at the hidden prompt, and press Return.
 
@@ -45,6 +51,16 @@ You need Google Chrome, Git, Node.js 22 with npm, Python 3, and a configured Cod
 
    The expected title is **Example Domain**. After `browser_finish`, the session should report zero remaining tabs.
 
+## Automatic extension updates
+
+A per-user LaunchAgent checks this GitHub repository for a new stable release every four hours while you are logged in. It verifies the ZIP against the SHA-256 digest from GitHub and checks the extension ID and version. If Chrome is running, it stages the update. Once a minute the agent checks whether Chrome has fully quit. It then swaps the extension directory atomically and keeps the previous version in `~/.local/share/codex-chrome-cli/task-updates/previous`. Chrome loads the updated files on its next launch. New required permissions need a manual update.
+
+For a previous ZIP or repository installation, run the installer once. If Chrome already loads the permanent directory printed by the installer, keep that registration. If you previously loaded a different directory, load the permanent directory once and check the token in step 3. Future releases use the same directory and extension ID. The updater manages the Chrome extension only. The MCP server and the updater script come from the repository checkout.
+
+To check immediately, run `python3 scripts/update_extension.py check`. If it reports a staged update, quit Chrome and rerun the command to apply it immediately, or leave Chrome closed for a minute. To disable scheduled checks, run `python3 scripts/update_extension.py disable`. The installed extension stays available.
+
+For manual installation, download the extension ZIP from the [latest release](https://github.com/NikoVonLas/codex-chrome-task-groups/releases/latest), extract it into a permanent folder, and choose that folder with **Load unpacked**. Then complete steps 3–5.
+
 ## Troubleshooting
 
 - **Codex cannot find `browser_start_task`.** Check the registration with `codex mcp get chrome-cli` and open a new Codex CLI session. If you moved the clone or changed the Node executable path, repeat step 4.
@@ -52,7 +68,7 @@ You need Google Chrome, Git, Node.js 22 with npm, Python 3, and a configured Cod
 - **Local HTML files do not open.** In the extension details in Chrome, turn on **Allow access to file URLs**. When registering the server, add `--allow-unrestricted-file-access` after the path to `start.mjs`. This flag also permits file operations outside the workspace.
 - **Task tabs close after a pause.** The connector closes its task tabs after 120 seconds of inactivity. The timer pauses while an operation is running. Use `browser_start_task` to begin a new task.
 
-To uninstall, run `codex mcp remove chrome-cli` and remove the extension from `chrome://extensions`.
+To uninstall, disable automatic updates as described above, then run `codex mcp remove chrome-cli` and remove the extension from `chrome://extensions`.
 
 ## Publishing a release
 
@@ -62,6 +78,7 @@ Set the release version in the package metadata, extension manifest, and MCP ser
 
 ```sh
 node --test extension.test.mjs lifecycle.test.mjs
+python3 -m unittest discover -s scripts
 ```
 
 The tests cover tab ownership, group creation, and cleanup when a task ends, the client disconnects, or Chrome returns an error. The `extension` directory contains the unpacked build. The local changes update the manifest name and group handling in `lib/background.mjs`.

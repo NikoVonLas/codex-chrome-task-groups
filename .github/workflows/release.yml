@@ -8,7 +8,17 @@ permissions:
   contents: write
 
 jobs:
+  updater-tests:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test the macOS updater
+        run: python3 -m unittest discover -s scripts
+
   package:
+    needs: updater-tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
