@@ -31,6 +31,6 @@
     "tabs",
     "tabGroups"
   ],
-  "version": "0.5.0",
-  "version_name": "0.5.0 + task group cleanup 1"
+  "version": "1.2.1",
+  "version_name": "Task Groups 1.2.1 (Playwright 0.5.0)"
 }

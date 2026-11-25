@@ -96,7 +96,7 @@ async function dispatch(message) {
   if (id === undefined || closing) return;
   if (method === 'initialize') {
     emit(id, {protocolVersion: '2025-06-18', capabilities: {tools: {}},
-      serverInfo: {name: 'Codex Chrome', version: '1.2.0'},
+      serverInfo: {name: 'Codex Chrome', version: '1.2.1'},
       instructions: 'Call browser_start_task with a short task name before browser work. Work in your own temporary tabs. Always call browser_finish before reporting the browser task complete. This removes the task group and closes session tabs; do not reuse personal tabs in this temporary session.'});
   } else if (method === 'ping') emit(id, {});
   else if (method === 'tools/list') emit(id, {tools: [...backend.tools, startTool, finishTool]});

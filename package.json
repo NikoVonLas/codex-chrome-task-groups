@@ -1,6 +1,6 @@
 {
   "name": "codex-chrome-task-groups",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "private": true,
   "description": "Pinned Playwright MCP browser connector for Codex CLI",
   "type": "module",

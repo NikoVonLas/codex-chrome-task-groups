@@ -16,7 +16,7 @@ You need Google Chrome, Git, Node.js 22 with npm, Python 3, and a configured Cod
    npm ci --ignore-scripts --no-audit --no-fund
    ```
 
-2. In the Chrome profile you want Codex to use, open `chrome://extensions`. Turn on **Developer mode**, choose **Load unpacked**, and select the `extension` directory in the clone. Chrome should show **Playwright — task groups (local)**. This build shares an extension ID with the Microsoft Playwright extension from the Chrome Web Store. If you already use the store version, you can load this build in a separate profile. The official ChatGPT extension has its own ID and can stay enabled.
+2. Download the extension ZIP from the [latest release](https://github.com/NikoVonLas/codex-chrome-task-groups/releases/latest) and extract it into a directory you plan to keep. You can also use the matching clone’s `extension` directory. In the Chrome profile you want Codex to use, open `chrome://extensions`. Turn on **Developer mode**, choose **Load unpacked**, and select the directory containing `manifest.json`. Chrome should show **Playwright — task groups (local)**. This build shares an extension ID with the Microsoft Playwright extension from the Chrome Web Store. If you already use the store version, you can load this build in a separate profile. The official ChatGPT extension has its own ID and can stay enabled.
 
 3. Click **Playwright — task groups (local)** in Chrome’s extensions menu. On its status page, click the copy button next to `PLAYWRIGHT_MCP_EXTENSION_TOKEN`. Run the following command in Terminal, paste the copied text at the hidden prompt, and press Return.
 
@@ -53,6 +53,10 @@ You need Google Chrome, Git, Node.js 22 with npm, Python 3, and a configured Cod
 - **Task tabs close after a pause.** The connector closes its task tabs after 120 seconds of inactivity. The timer pauses while an operation is running. Use `browser_start_task` to begin a new task.
 
 To uninstall, run `codex mcp remove chrome-cli` and remove the extension from `chrome://extensions`.
+
+## Publishing a release
+
+Set the release version in the package metadata, extension manifest, and MCP server info. Publish a GitHub release with the matching `vX.Y.Z` tag. GitHub Actions runs the tests and attaches `chrome-task-groups-X.Y.Z.zip` to the release. The ZIP contains the unpacked Chrome extension and its license notices. The MCP server is available in the source archive and repository.
 
 ## Development and licensing
 
