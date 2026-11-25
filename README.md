@@ -1,14 +1,14 @@
-# Chrome Task Groups для Codex CLI
+# Chrome Task Groups for Codex CLI
 
-Локальный MCP-сервер для работы с Google Chrome из терминала на macOS. Каждая задача получает свою группу фоновых вкладок. В конце работы коннектор разгруппировывает и закрывает вкладки этой сессии. Группы других задач могут оставаться открытыми одновременно.
+Control Google Chrome from Codex CLI on macOS. Each task gets a named group of background tabs. When a task finishes, the connector ungroups and closes the tabs it owns. Other tasks can keep their groups open.
 
-В комплект входят модифицированное расширение Microsoft Playwright 0.5.0 и обёртка для Playwright MCP 0.0.85. Это независимая интеграция. Для работы ей нужны Codex CLI и Chrome на одном Mac. Команда `@Chrome` и боковой чат в приложении ChatGPT относятся к отдельной интеграции OpenAI.
+The connector runs on the same Mac as Chrome and Codex CLI. It includes a modified Microsoft Playwright Extension 0.5.0 and a local server that wraps Playwright MCP 0.0.85. The ChatGPT desktop app uses a separate OpenAI integration for `@Chrome` and its side chat.
 
-## Установка на Mac
+## Install on macOS
 
-Потребуются Google Chrome, Git, Node.js 22 с npm, Python 3 и настроенный Codex CLI. Выполняйте команды из обычного терминала под своей учётной записью.
+You need Google Chrome, Git, Node.js 22 with npm, Python 3, and a configured Codex CLI. Run the commands below in Terminal under your own account.
 
-1. Скачайте проект в постоянную папку и установите зависимости.
+1. Clone the repository into a directory you plan to keep and install the dependencies.
 
    ```sh
    git clone https://github.com/NikoVonLas/codex-chrome-task-groups.git
@@ -16,46 +16,52 @@
    npm ci --ignore-scripts --no-audit --no-fund
    ```
 
-2. В нужном профиле Chrome откройте `chrome://extensions`. Включите **Режим разработчика**, нажмите **Загрузить распакованное расширение** и выберите папку `extension` внутри клона. Появится **Playwright — task groups (local)**. У этой сборки тот же ID, что у расширения Microsoft Playwright из магазина. Если оно уже установлено, можно загрузить нашу сборку в отдельный профиль Chrome. Штатное расширение ChatGPT имеет другой ID и может оставаться включённым.
+2. In the Chrome profile you want Codex to use, open `chrome://extensions`. Turn on **Developer mode**, choose **Load unpacked**, and select the `extension` directory in the clone. Chrome should show **Playwright — task groups (local)**. This build shares an extension ID with the Microsoft Playwright extension from the Chrome Web Store. If you already use the store version, you can load this build in a separate profile. The official ChatGPT extension has its own ID and can stay enabled.
 
-3. Щёлкните значок **Playwright — task groups (local)** на панели расширений. На открывшейся странице нажмите кнопку копирования рядом с `PLAYWRIGHT_MCP_EXTENSION_TOKEN`. В том же терминале выполните команду, вставьте скопированную строку в скрытое поле и нажмите Enter.
+3. Click **Playwright — task groups (local)** in Chrome’s extensions menu. On its status page, click the copy button next to `PLAYWRIGHT_MCP_EXTENSION_TOKEN`. Run the following command in Terminal, paste the copied text at the hidden prompt, and press Return.
 
    ```sh
    python3 setup-token.py
    ```
 
-   У каждого профиля свой токен. Коннектор сохраняет его на этом Mac в `~/.codex-chrome-task-groups/extension-token` с правами `0600`. Токен даёт повторный доступ к браузеру, включая сайты с активной сессией. Расширение запрашивает права отладчика и доступ ко всем сайтам. Отдельный рабочий профиль позволяет ограничить набор доступных аккаунтов.
+   Each profile has its own token. The setup script stores it on this Mac at `~/.codex-chrome-task-groups/extension-token` with file mode `0600`. The token allows repeated access to the browser, including signed-in sites. The extension requests debugger access and access to all sites. Use a separate Chrome profile to limit which accounts are available to Codex.
 
-4. Зарегистрируйте сервер и откройте новую сессию Codex CLI.
+4. Register the server with Codex CLI.
 
    ```sh
    codex mcp add chrome-cli -- "$(command -v node)" "$PWD/start.mjs"
    codex mcp get chrome-cli
    ```
 
-   По умолчанию используется профиль `Default`. Для другого профиля найдите его каталог в конце поля **Profile Path** на странице `chrome://version`. Например, для `Profile 1` используйте такую команду регистрации:
+   The server uses the `Default` Chrome profile unless you specify another one. To find the directory name of your profile, open `chrome://version` and read the last component of **Profile Path**. For a directory named `Profile 1`, use this registration command.
 
    ```sh
    codex mcp add chrome-cli --env 'CHROME_PROFILE_DIR=Profile 1' -- "$(command -v node)" "$PWD/start.mjs"
    ```
 
-5. В новом чате Codex CLI попросите: «Через chrome-cli начни задачу “Проверка”, открой https://example.com в новой вкладке, прочитай заголовок и заверши задачу». Ожидаемый заголовок — **Example Domain**. После вызова `browser_finish` в сессии должно остаться ноль вкладок.
+5. Open a new Codex CLI session and try this request.
 
-## Если не подключается
+   > Use chrome-cli to start a task named “Connection check”. Open https://example.com in a new tab, read the page title, and finish the task.
 
-- Если в Codex нет `browser_start_task`, проверьте регистрацию через `codex mcp get chrome-cli` и откройте новую сессию. После перемещения клона или смены пути к Node повторите шаг 4.
-- Если Chrome показывает `Invalid token provided`, проверьте выбранный профиль и используйте его актуальный токен. Для замены удалите старый файл `~/.codex-chrome-task-groups/extension-token` и повторите шаг 3.
-- Если открываются сайты, но требуется доступ к локальным HTML-файлам, включите для расширения **Разрешить открывать локальные файлы по ссылкам** и при регистрации добавьте `--allow-unrestricted-file-access` после пути к `start.mjs`. Этот флаг также разрешает файловые операции за пределами рабочей папки.
-- После 120 секунд простоя коннектор закрывает вкладки своей задачи. Начните следующую через `browser_start_task`. Во время активной операции таймер приостановлен.
+   The expected title is **Example Domain**. After `browser_finish`, the session should report zero remaining tabs.
 
-Для удаления регистрации выполните `codex mcp remove chrome-cli`. Расширение удаляется через `chrome://extensions`.
+## Troubleshooting
 
-## Разработка и лицензии
+- **Codex cannot find `browser_start_task`.** Check the registration with `codex mcp get chrome-cli` and open a new Codex CLI session. If you moved the clone or changed the Node executable path, repeat step 4.
+- **Chrome reports `Invalid token provided`.** Check which profile Chrome is using. To replace a stale token, delete `~/.codex-chrome-task-groups/extension-token` and repeat step 3 using that profile.
+- **Local HTML files do not open.** In the extension details in Chrome, turn on **Allow access to file URLs**. When registering the server, add `--allow-unrestricted-file-access` after the path to `start.mjs`. This flag also permits file operations outside the workspace.
+- **Task tabs close after a pause.** The connector closes its task tabs after 120 seconds of inactivity. The timer pauses while an operation is running. Use `browser_start_task` to begin a new task.
+
+To uninstall, run `codex mcp remove chrome-cli` and remove the extension from `chrome://extensions`.
+
+## Development and licensing
 
 ```sh
 node --test extension.test.mjs lifecycle.test.mjs
 ```
 
-Тесты проверяют изоляцию вкладок, создание групп и завершение задач, включая отключение клиента и ошибки Chrome. Папка `extension` содержит готовую сборку. Локальные изменения затрагивают название в манифесте и управление группами в `lib/background.mjs`.
+The tests cover tab ownership, group creation, and cleanup when a task ends, the client disconnects, or Chrome returns an error. The `extension` directory contains the unpacked build. The local changes update the manifest name and group handling in `lib/background.mjs`.
 
-Основа расширения — [Microsoft Playwright](https://github.com/microsoft/playwright). MCP-сервер устанавливается из [Microsoft Playwright MCP](https://github.com/microsoft/playwright-mcp) через npm. Лицензии и уведомления включены в [LICENSE](LICENSE), [NOTICE](NOTICE) и [ThirdPartyNotices.txt](ThirdPartyNotices.txt).
+The extension is based on Microsoft Playwright. npm installs Microsoft’s Playwright MCP server. [Playwright](https://github.com/microsoft/playwright) · [Playwright MCP](https://github.com/microsoft/playwright-mcp)
+
+The repository includes the applicable license and third-party notices. [License](LICENSE) · [Notice](NOTICE) · [Third-party notices](ThirdPartyNotices.txt)
