@@ -1,0 +1,5 @@
+node_modules/
+extension-token
+.env
+.DS_Store
+__pycache__/
